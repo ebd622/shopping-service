@@ -12,6 +12,15 @@ POST /api/v1/orders
 GET /api/v1/orders/{id}
 DELETE /api/v1/orders/{id}"
 
+## Clarifications
+
+### Session 2026-10-27
+
+- Q: After `DELETE /api/v1/orders/{id}`, should the order remain retrievable with a canceled status or be treated as deleted and no longer retrievable? → A: Soft cancel: order remains retrievable and shows a canceled status.
+- Q: When a client retries `POST /api/v1/orders` due to network timeout, how should duplicate submissions be handled? → A: Idempotency key required; repeated requests with same key return the original created order.
+- Q: If `DELETE /api/v1/orders/{id}` is called for an order that is already canceled, should the API treat it as a successful no-op or return a conflict? → A: Return success (no-op) when order is already canceled.
+- Q: If `DELETE /api/v1/orders/{id}` is called for an order that has progressed to a non-cancellable state, what response should the API return? → A: Return conflict indicating the order cannot be canceled in its current state.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Browse Product Catalog (Priority: P1)
@@ -50,6 +59,9 @@ system creates a new order with a unique identifier.
    identifier.
 2. **Given** an invalid order request, **When** the client submits the order, **Then** the system
    rejects the request and returns a standardized validation error response.
+3. **Given** a previously successful order request and the same idempotency key,
+   **When** the client retries `POST /api/v1/orders`, **Then** the system returns the original
+   order result and does not create a duplicate order.
 
 ---
 
@@ -70,15 +82,24 @@ verifying the order is no longer retrievable as an active order.
 2. **Given** a non-existing order ID, **When** the client requests that order,
    **Then** the system returns a standardized not-found error response.
 3. **Given** an existing cancellable order ID, **When** the client requests order deletion,
-   **Then** the system marks or removes the order according to policy and confirms cancellation.
+   **Then** the system marks the order as canceled and confirms cancellation.
+4. **Given** an order has already been canceled, **When** the client requests that order,
+   **Then** the system returns the order details with a canceled status.
+5. **Given** an order is already canceled, **When** the client requests deletion again,
+   **Then** the system returns a successful no-op response and does not change order data.
+6. **Given** an order is in a non-cancellable state, **When** the client requests deletion,
+   **Then** the system returns a standardized conflict response indicating cancellation is not
+   allowed for the current order state.
 
 ---
 
 ### Edge Cases
 
 - What happens when a client requests `GET /api/v1/orders/{id}` with a malformed ID format?
-- How does the system handle duplicate `POST /api/v1/orders` submissions caused by client retries?
-- What happens when `DELETE /api/v1/orders/{id}` is requested for an order that is already canceled?
+- How does the system respond when `POST /api/v1/orders` is submitted without an idempotency key?
+- `DELETE /api/v1/orders/{id}` for an already canceled order returns a successful no-op response.
+- `DELETE /api/v1/orders/{id}` for a non-cancellable order state returns a standardized conflict
+  response.
 - How does the system respond when product data is temporarily unavailable during order creation?
 
 ## Requirements *(mandatory)*
@@ -91,13 +112,21 @@ verifying the order is no longer retrievable as an active order.
 - **FR-003**: System MUST expose `GET /api/v1/orders/{id}` to return details for the specified
   order when it exists.
 - **FR-004**: System MUST expose `DELETE /api/v1/orders/{id}` to cancel or remove the specified
-  order according to defined order lifecycle policy.
+  order by transitioning it to a canceled status.
 - **FR-005**: System MUST return standardized error responses for validation failures,
   resource-not-found cases, and other client-visible request errors.
 - **FR-006**: System MUST version all listed endpoints under `/api/v1` and preserve backward
   compatibility for this version after release.
 - **FR-007**: System MUST ensure that successful order creation returns a unique order identifier
   that can be used for subsequent retrieval and deletion operations.
+- **FR-008**: System MUST ensure that canceled orders remain retrievable through
+  `GET /api/v1/orders/{id}` and are clearly identified as canceled.
+- **FR-009**: System MUST require an idempotency key for `POST /api/v1/orders` and MUST return the
+  original successful result for retries that reuse the same key and equivalent request payload.
+- **FR-010**: System MUST treat repeated `DELETE /api/v1/orders/{id}` on an already canceled order
+  as an idempotent successful no-op.
+- **FR-011**: System MUST return a standardized conflict response when
+  `DELETE /api/v1/orders/{id}` is requested for an order in a non-cancellable state.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -124,7 +153,7 @@ verifying the order is no longer retrievable as an active order.
 
 - API consumers are authenticated/authorized by an existing mechanism outside this feature scope.
 - Product catalog data is managed by existing catalog capabilities and is available for read access.
-- Order cancellation behavior follows current business policy for cancellable states.
+- Order cancellation uses soft cancel semantics and does not hard-delete order records.
 - This feature scope is limited to the four listed endpoints and excludes additional order
   management operations.
 
