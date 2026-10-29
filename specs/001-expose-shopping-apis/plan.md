@@ -1,15 +1,16 @@
 # Implementation Plan: Expose Shopping APIs
 
-**Branch**: `001-expose-shopping-apis` | **Date**: 2026-10-28 | **Spec**: `specs/001-expose-shopping-apis/spec.md`
+**Branch**: `001-expose-shopping-apis` | **Date**: 2026-10-29 | **Spec**: `specs/001-expose-shopping-apis/spec.md`
 
 **Input**: Feature specification from `specs/001-expose-shopping-apis/spec.md`
 
 ## Summary
 
-Expose versioned shopping endpoints for product listing and order lifecycle operations: list
-products, create order, fetch order by ID, and cancel order with soft-cancel semantics. The
-implementation prioritizes standardized error responses, request validation, idempotent order
-creation with idempotency keys, and lifecycle-safe cancellation behavior aligned with the
+Expose versioned shopping endpoints for product listing, product creation, and order lifecycle
+operations: list products, add products, create order, fetch order by ID, and cancel order with
+soft-cancel semantics. The implementation prioritizes standardized error responses, request
+validation, idempotent order creation with idempotency keys, retryable service-unavailable behavior
+for transient catalog outages, and lifecycle-safe cancellation behavior aligned with the
 constitution.
 
 ## Technical Context
@@ -32,10 +33,13 @@ Micrometer
 under expected baseline load
 
 **Constraints**: API versioning under `/api/v1`; standardized error schema for all client-visible
-errors; soft-cancel orders remain retrievable; DELETE idempotency for already canceled orders;
-conflict response for non-cancellable states; no hard-coded secrets
+errors; `POST /api/v1/products` requires `sku`, `name`, and `price`; duplicate `sku` must return
+conflict; malformed order IDs return validation errors; soft-cancel orders remain retrievable;
+DELETE idempotency for already canceled orders; non-cancellable statuses are `SHIPPED` and
+`COMPLETED`; transient product-catalog dependency failures during order creation return retryable
+service unavailable responses; no hard-coded secrets
 
-**Scale/Scope**: Initial scope limited to four endpoints and core order lifecycle for demo service;
+**Scale/Scope**: Initial scope limited to five endpoints and core order lifecycle for demo service;
 single service and single primary PostgreSQL database
 
 ## Constitution Check
@@ -57,6 +61,10 @@ single service and single primary PostgreSQL database
 
 - PASS: Data model supports soft-cancel lifecycle and non-cancellable conflict handling.
 - PASS: Contract defines `/api/v1` routes, request/response validation, and error schema.
+- PASS: Contract includes product creation request validation (`sku`, `name`, `price`) and
+  duplicate-`sku` conflict behavior.
+- PASS: Contract captures malformed order ID validation and retryable service-unavailable behavior
+  for order creation when catalog data is unavailable.
 - PASS: Quickstart validates functional, edge-case, and idempotency flows.
 - PASS: No constitution violations introduced by planned design artifacts.
 

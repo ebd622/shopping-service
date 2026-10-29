@@ -2,26 +2,27 @@
 
 ## Product
 
-- Description: Catalog item exposed by `GET /api/v1/products`.
+- Description: Catalog item exposed by `GET /api/v1/products` and created by `POST /api/v1/products`.
 - Fields:
   - `id` (UUID, required, unique)
   - `sku` (string, required, unique)
   - `name` (string, required, 1..200)
   - `description` (string, optional, <=2000)
-  - `priceAmount` (decimal, required, positive)
-  - `priceCurrency` (string, required, ISO-4217)
+  - `price` (decimal, required, positive)
+  - `currency` (string, optional, ISO-4217, defaults by service policy)
   - `available` (boolean, required)
   - `updatedAt` (timestamp, required)
 - Validation rules:
-  - `sku`, `name`, `priceAmount`, `priceCurrency` required for active products.
-  - `priceAmount` must be > 0.
+  - `sku`, `name`, and `price` are required for product creation.
+  - `price` must be > 0.
+  - Duplicate `sku` is rejected as conflict.
 
 ## Order
 
 - Description: Shopper order created via `POST /api/v1/orders` and managed via `GET/DELETE` by ID.
 - Fields:
   - `id` (UUID, required, unique)
-  - `status` (enum, required: `CREATED`, `PROCESSING`, `COMPLETED`, `CANCELED`)
+  - `status` (enum, required: `CREATED`, `PROCESSING`, `SHIPPED`, `COMPLETED`, `CANCELED`)
   - `createdAt` (timestamp, required)
   - `updatedAt` (timestamp, required)
   - `canceledAt` (timestamp, optional)
@@ -67,15 +68,19 @@
 ## State Transitions
 
 - `CREATED -> PROCESSING`
-- `PROCESSING -> COMPLETED`
+- `PROCESSING -> SHIPPED`
+- `SHIPPED -> COMPLETED`
 - `CREATED -> CANCELED`
 - `PROCESSING -> CANCELED` (only if business rules allow)
-- `COMPLETED` is non-cancellable
+- `SHIPPED` and `COMPLETED` are non-cancellable
 - `CANCELED -> CANCELED` via repeated DELETE (idempotent no-op)
 
 ## API-Driven Behavioral Constraints
 
 - `GET /api/v1/orders/{id}` returns canceled orders with `status=CANCELED`.
 - `DELETE /api/v1/orders/{id}` on already canceled order returns success no-op.
-- `DELETE /api/v1/orders/{id}` on non-cancellable order returns conflict.
+- `DELETE /api/v1/orders/{id}` on `SHIPPED` or `COMPLETED` returns conflict.
+- Malformed order IDs on `GET/DELETE /api/v1/orders/{id}` return validation error.
+- `POST /api/v1/orders` returns retryable service unavailable when required product catalog data is
+  temporarily unavailable.
 

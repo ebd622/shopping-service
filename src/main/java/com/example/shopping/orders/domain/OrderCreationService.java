@@ -11,6 +11,7 @@ import com.example.shopping.products.infra.ProductEntity;
 import com.example.shopping.products.infra.ProductRepository;
 import com.example.shopping.shared.error.ConflictException;
 import com.example.shopping.shared.error.NotFoundException;
+import com.example.shopping.shared.error.ServiceUnavailableException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -63,9 +65,14 @@ public class OrderCreationService {
         }
 
         List<UUID> productIds = request.items().stream().map(CreateOrderRequest.Item::productId).toList();
-        Map<UUID, ProductEntity> productsById = productRepository.findAllById(productIds)
-                .stream()
-                .collect(Collectors.toMap(ProductEntity::getId, Function.identity()));
+        Map<UUID, ProductEntity> productsById;
+        try {
+            productsById = productRepository.findAllById(productIds)
+                    .stream()
+                    .collect(Collectors.toMap(ProductEntity::getId, Function.identity()));
+        } catch (TransientDataAccessException ex) {
+            throw new ServiceUnavailableException("Product catalog is temporarily unavailable. Please retry.");
+        }
 
         for (UUID productId : productIds) {
             if (!productsById.containsKey(productId)) {

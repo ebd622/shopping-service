@@ -21,6 +21,28 @@ paths:
                   $ref: '#/components/schemas/Product'
         '500':
           $ref: '#/components/responses/InternalError'
+    post:
+      summary: Create product
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/v1/orders:
     post:
       summary: Create order
@@ -52,6 +74,8 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
         '500':
           $ref: '#/components/responses/InternalError'
   /api/v1/orders/{id}:
@@ -107,7 +131,7 @@ components:
   schemas:
     Product:
       type: object
-      required: [id, sku, name, priceAmount, priceCurrency, available]
+      required: [id, sku, name, price, available]
       properties:
         id:
           type: string
@@ -118,13 +142,34 @@ components:
           type: string
         description:
           type: string
-        priceAmount:
+        price:
           type: number
           format: double
-        priceCurrency:
+          minimum: 0.01
+        currency:
           type: string
+          default: USD
         available:
           type: boolean
+    CreateProductRequest:
+      type: object
+      required: [sku, name, price]
+      properties:
+        sku:
+          type: string
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        price:
+          type: number
+          format: double
+          minimum: 0.01
+        description:
+          type: string
+          maxLength: 2000
+        currency:
+          type: string
     CreateOrderRequest:
       type: object
       required: [items]
@@ -153,7 +198,7 @@ components:
           format: uuid
         status:
           type: string
-          enum: [CREATED, PROCESSING, COMPLETED, CANCELED]
+          enum: [CREATED, PROCESSING, SHIPPED, COMPLETED, CANCELED]
         items:
           type: array
           items:
@@ -235,6 +280,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     InternalError:
       description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: Temporary dependency outage; request can be retried
       content:
         application/json:
           schema:

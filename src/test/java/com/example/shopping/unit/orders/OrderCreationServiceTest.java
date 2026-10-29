@@ -16,6 +16,7 @@ import com.example.shopping.orders.infra.OrderRepository;
 import com.example.shopping.products.infra.ProductEntity;
 import com.example.shopping.products.infra.ProductRepository;
 import com.example.shopping.shared.error.ConflictException;
+import com.example.shopping.shared.error.ServiceUnavailableException;
 import tools.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.dao.TransientDataAccessResourceException;
 
 class OrderCreationServiceTest {
 
@@ -82,6 +84,19 @@ class OrderCreationServiceTest {
 
         CreateOrderRequest request = new CreateOrderRequest(List.of(new CreateOrderRequest.Item(UUID.randomUUID(), 1)));
         assertThatThrownBy(() -> service.createOrder("k1", request)).isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void shouldReturnServiceUnavailableWhenCatalogIsTemporarilyUnavailable() {
+        UUID productId = UUID.randomUUID();
+        CreateOrderRequest request = new CreateOrderRequest(List.of(new CreateOrderRequest.Item(productId, 1)));
+
+        when(idempotencyRepository.findById("k1")).thenReturn(Optional.empty());
+        when(productRepository.findAllById(List.of(productId)))
+                .thenThrow(new TransientDataAccessResourceException("catalog unavailable"));
+
+        assertThatThrownBy(() -> service.createOrder("k1", request))
+                .isInstanceOf(ServiceUnavailableException.class);
     }
 }
 

@@ -8,8 +8,8 @@ public record ProductResponse(
         String sku,
         String name,
         String description,
-        BigDecimal priceAmount,
-        String priceCurrency,
+        BigDecimal price,
+        String currency,
         boolean available
 ) {
 }

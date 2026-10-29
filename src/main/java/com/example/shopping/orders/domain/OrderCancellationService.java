@@ -30,7 +30,7 @@ public class OrderCancellationService {
             return orderMapper.toResponse(order);
         }
 
-        if (order.getStatus() == OrderStatus.COMPLETED) {
+        if (order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.COMPLETED) {
             throw new ConflictException("Order cannot be canceled in current state: " + order.getStatus());
         }
 

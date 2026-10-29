@@ -3,7 +3,6 @@ package com.example.shopping.orders.api;
 import com.example.shopping.orders.domain.OrderCancellationService;
 import com.example.shopping.orders.domain.OrderCreationService;
 import com.example.shopping.orders.domain.OrderQueryService;
-import com.example.shopping.shared.error.BadRequestException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
@@ -40,9 +39,6 @@ public class OrdersController {
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse createOrder(@RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
                                      @Valid @RequestBody CreateOrderRequest request) {
-        if (idempotencyKey.isBlank()) {
-            throw new BadRequestException("Idempotency-Key is required");
-        }
         return orderCreationService.createOrder(idempotencyKey, request);
     }
 

@@ -72,3 +72,46 @@
   - Auto-generate server key: rejected because it hides client retry intent and weakens contract
     transparency.
 
+## Decision 9: Product uniqueness strategy
+
+- Decision: Use `sku` as the unique catalog identifier for product creation.
+- Rationale: `sku` is stable for business/catalog workflows and gives deterministic duplicate
+  detection semantics.
+- Alternatives considered:
+  - Name-based uniqueness: rejected because names are mutable and collision-prone.
+  - Generated-id-only uniqueness: rejected because it allows duplicate business products.
+
+## Decision 10: Required fields for product creation
+
+- Decision: Require `sku`, `name`, and `price` in `POST /api/v1/products`.
+- Rationale: These fields are the minimal set needed to identify and sell a product while keeping
+  request payloads concise.
+- Alternatives considered:
+  - Require additional fields (`currency`, `description`): rejected for v1 simplicity.
+  - Require only `sku`/`name`: rejected because purchasable price would be missing.
+
+## Decision 11: Malformed order ID handling
+
+- Decision: Treat malformed order IDs in `GET/DELETE /api/v1/orders/{id}` as validation errors.
+- Rationale: Separates invalid input from not-found resources and yields clearer client remediation.
+- Alternatives considered:
+  - Return not found for malformed IDs: rejected because it conflates two distinct error classes.
+
+## Decision 12: Transient catalog dependency failure behavior
+
+- Decision: `POST /api/v1/orders` returns standardized service unavailable when required catalog
+  data is temporarily unavailable; response is explicitly retryable.
+- Rationale: Prevents creating orders with unverifiable product data while preserving safe retry
+  semantics.
+- Alternatives considered:
+  - Accept then validate asynchronously: rejected for v1 due to consistency/reconciliation risk.
+  - Return validation error: rejected because upstream outage is transient, not client input fault.
+
+## Decision 13: Explicit non-cancellable states
+
+- Decision: Treat `SHIPPED` and `COMPLETED` orders as non-cancellable.
+- Rationale: Matches lifecycle expectations where fulfillment completion blocks cancellation.
+- Alternatives considered:
+  - Only `COMPLETED` non-cancellable: rejected as too permissive post-shipment.
+  - Include `PAID` as non-cancellable: rejected for v1 to retain user flexibility before shipment.
+

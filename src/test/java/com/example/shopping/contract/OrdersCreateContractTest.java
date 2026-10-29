@@ -13,6 +13,7 @@ import com.example.shopping.orders.domain.OrderCancellationService;
 import com.example.shopping.orders.domain.OrderCreationService;
 import com.example.shopping.orders.domain.OrderQueryService;
 import com.example.shopping.shared.error.ConflictException;
+import com.example.shopping.shared.error.ServiceUnavailableException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -65,6 +66,28 @@ class OrdersCreateContractTest {
                         .content("{\"items\":[{\"productId\":\"11111111-1111-1111-1111-111111111111\",\"quantity\":1}]}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONFLICT"));
+    }
+
+    @Test
+    void shouldReturnValidationErrorWhenIdempotencyKeyMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"productId\":\"11111111-1111-1111-1111-111111111111\",\"quantity\":1}]}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void shouldReturnServiceUnavailableWhenCatalogDown() throws Exception {
+        when(orderCreationService.createOrder(eq("key-1"), any()))
+                .thenThrow(new ServiceUnavailableException("Product catalog is temporarily unavailable. Please retry."));
+
+        mockMvc.perform(post("/api/v1/orders")
+                        .header("Idempotency-Key", "key-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"productId\":\"11111111-1111-1111-1111-111111111111\",\"quantity\":1}]}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("SERVICE_UNAVAILABLE"));
     }
 }
 

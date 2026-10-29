@@ -108,5 +108,29 @@ class OrdersLifecycleIntegrationTest extends PostgresContainerSupport {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONFLICT"));
     }
+
+    @Test
+    void shouldReturnConflictWhenShippedOrderIsCanceled() throws Exception {
+        OrderEntity order = new OrderEntity();
+        UUID id = UUID.randomUUID();
+        order.setId(id);
+        order.setStatus(OrderStatus.SHIPPED);
+        order.setCurrency("USD");
+        order.setTotalAmount(new BigDecimal("1.00"));
+        order.setCreatedAt(Instant.now());
+        order.setUpdatedAt(Instant.now());
+        orderRepository.save(order);
+
+        mockMvc.perform(delete("/api/v1/orders/{id}", id))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+    }
+
+    @Test
+    void shouldReturnValidationErrorForMalformedOrderId() throws Exception {
+        mockMvc.perform(get("/api/v1/orders/{id}", "not-a-uuid"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
 }
 

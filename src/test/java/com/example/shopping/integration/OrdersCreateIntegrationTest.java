@@ -81,5 +81,16 @@ class OrdersCreateIntegrationTest extends PostgresContainerSupport {
 
         org.assertj.core.api.Assertions.assertThat(orderRepository.findAll()).hasSize(1);
     }
+
+    @Test
+    void shouldRejectWhenIdempotencyKeyIsMissing() throws Exception {
+        String payload = "{\"items\":[{\"productId\":\"" + productId + "\",\"quantity\":1}]}";
+
+        mockMvc.perform(post("/api/v1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
 }
 

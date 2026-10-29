@@ -11,6 +11,7 @@ import com.example.shopping.orders.api.OrdersController;
 import com.example.shopping.orders.domain.OrderCancellationService;
 import com.example.shopping.orders.domain.OrderCreationService;
 import com.example.shopping.orders.domain.OrderQueryService;
+import com.example.shopping.shared.error.ConflictException;
 import com.example.shopping.shared.error.NotFoundException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -71,6 +72,24 @@ class OrdersLifecycleContractTest {
         mockMvc.perform(delete("/api/v1/orders/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELED"));
+    }
+
+    @Test
+    void shouldReturnConflictWhenOrderIsNonCancellable() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(orderCancellationService.cancel(id))
+                .thenThrow(new ConflictException("Order cannot be canceled in current state: SHIPPED"));
+
+        mockMvc.perform(delete("/api/v1/orders/{id}", id))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+    }
+
+    @Test
+    void shouldReturnValidationErrorForMalformedOrderId() throws Exception {
+        mockMvc.perform(get("/api/v1/orders/{id}", "not-a-uuid"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 }
 

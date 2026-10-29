@@ -50,6 +50,14 @@ class OrderLifecycleServiceTest {
         assertThatThrownBy(() -> service.cancel(order.getId())).isInstanceOf(ConflictException.class);
     }
 
+    @Test
+    void shouldFailForShippedOrder() {
+        OrderEntity order = baseOrder(OrderStatus.SHIPPED);
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.cancel(order.getId())).isInstanceOf(ConflictException.class);
+    }
+
     private OrderEntity baseOrder(OrderStatus status) {
         OrderEntity order = new OrderEntity();
         order.setId(UUID.randomUUID());
