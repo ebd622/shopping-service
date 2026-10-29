@@ -21,6 +21,10 @@ DELETE /api/v1/orders/{id}"
 - Q: If `DELETE /api/v1/orders/{id}` is called for an order that is already canceled, should the API treat it as a successful no-op or return a conflict? → A: Return success (no-op) when order is already canceled.
 - Q: If `DELETE /api/v1/orders/{id}` is called for an order that has progressed to a non-cancellable state, what response should the API return? → A: Return conflict indicating the order cannot be canceled in its current state.
 
+### Session 2026-10-28
+
+- Q: How should `POST /api/v1/orders` respond when the `Idempotency-Key` header is missing? → A: Reject request with standardized validation error indicating `Idempotency-Key` is required.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Browse Product Catalog (Priority: P1)
@@ -62,6 +66,9 @@ system creates a new order with a unique identifier.
 3. **Given** a previously successful order request and the same idempotency key,
    **When** the client retries `POST /api/v1/orders`, **Then** the system returns the original
    order result and does not create a duplicate order.
+4. **Given** a request is submitted without `Idempotency-Key`, **When** the client calls
+   `POST /api/v1/orders`, **Then** the system rejects the request with a standardized validation
+   error indicating the missing required header.
 
 ---
 
@@ -96,7 +103,8 @@ verifying the order is no longer retrievable as an active order.
 ### Edge Cases
 
 - What happens when a client requests `GET /api/v1/orders/{id}` with a malformed ID format?
-- How does the system respond when `POST /api/v1/orders` is submitted without an idempotency key?
+- `POST /api/v1/orders` submitted without `Idempotency-Key` returns a standardized validation
+  error indicating the required header is missing.
 - `DELETE /api/v1/orders/{id}` for an already canceled order returns a successful no-op response.
 - `DELETE /api/v1/orders/{id}` for a non-cancellable order state returns a standardized conflict
   response.
@@ -127,6 +135,8 @@ verifying the order is no longer retrievable as an active order.
   as an idempotent successful no-op.
 - **FR-011**: System MUST return a standardized conflict response when
   `DELETE /api/v1/orders/{id}` is requested for an order in a non-cancellable state.
+- **FR-012**: System MUST reject `POST /api/v1/orders` requests that omit `Idempotency-Key` with
+  a standardized validation error response identifying the missing required header.
 
 ### Key Entities *(include if feature involves data)*
 

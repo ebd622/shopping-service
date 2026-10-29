@@ -72,6 +72,17 @@ curl -sS -X POST http://localhost:8080/api/v1/orders \
 Expected outcome:
 - Returns original order result; no duplicate order created
 
+### Create order without idempotency key
+
+```bash
+curl -sS -X POST http://localhost:8080/api/v1/orders \
+  -H 'Content-Type: application/json' \
+  -d '{"items":[{"productId":"11111111-1111-1111-1111-111111111111","quantity":1}]}'
+```
+
+Expected outcome:
+- Standardized validation error indicating `Idempotency-Key` is required
+
 ### Get order by ID
 
 ```bash

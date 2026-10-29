@@ -1,8 +1,8 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 -> 1.1.0
+- Version change: 1.1.0 -> 1.2.0
 - Modified principles:
-  - I. Platform and Architecture Baseline (expanded JSON serialization standard)
+  - I. Platform and Architecture Baseline (framework version pinned)
 - Added sections:
   - None
 - Removed sections:
@@ -16,8 +16,8 @@ Sync Impact Report
 ## Core Principles
 
 ### I. Platform and Architecture Baseline
-All services MUST use Java 21 LTS, Maven, and the latest stable Spring Boot release approved at
-the time of dependency update. Code organization MUST follow a feature-based package structure,
+All services MUST use Java 21 LTS, Maven, and Spring Boot 4.1.2. Code organization MUST follow
+a feature-based package structure,
 and DTOs SHOULD be implemented as Java Records when immutability and concise transport models
 fit the use case. JSON serialization/deserialization MUST use Jackson 3; Jackson 2 dependencies
 MUST NOT be introduced in new or updated code. Architecture and code design MUST follow SOLID and
@@ -65,7 +65,7 @@ resolve incidents.
 ## Technology Standards and Constraints
 
 - Runtime: Java 21 LTS is mandatory.
-- Framework: Spring Boot MUST track the latest stable release, with controlled upgrade cadence.
+- Framework: Spring Boot 4.1.2 is mandatory.
 - Build: Maven is the standard and required build tool.
 - Serialization: Jackson 3 is required; Jackson 2 is prohibited.
 - API documentation: OpenAPI 3 artifacts MUST remain current with implementation.
@@ -102,4 +102,4 @@ Compliance and review:
 - Reviewers MUST block merges that violate mandatory provisions until remediated.
 - Compliance posture SHOULD be reviewed at least quarterly and after major incidents.
 
-**Version**: 1.1.0 | **Ratified**: TODO(RATIFICATION_DATE): confirm original adoption date | **Last Amended**: 2026-10-27
+**Version**: 1.2.0 | **Ratified**: TODO(RATIFICATION_DATE): confirm original adoption date | **Last Amended**: 2026-10-28

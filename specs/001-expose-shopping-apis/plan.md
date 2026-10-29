@@ -1,6 +1,6 @@
 # Implementation Plan: Expose Shopping APIs
 
-**Branch**: `001-expose-shopping-apis` | **Date**: 2026-10-27 | **Spec**: `specs/001-expose-shopping-apis/spec.md`
+**Branch**: `001-expose-shopping-apis` | **Date**: 2026-10-28 | **Spec**: `specs/001-expose-shopping-apis/spec.md`
 
 **Input**: Feature specification from `specs/001-expose-shopping-apis/spec.md`
 
@@ -16,7 +16,7 @@ constitution.
 
 **Language/Version**: Java 21 LTS
 
-**Primary Dependencies**: Spring Boot (latest stable 3.x), Spring Web, Spring Validation,
+**Primary Dependencies**: Spring Boot 4.1.2, Spring Web, Spring Validation,
 Spring Data JPA, PostgreSQL driver, Springdoc OpenAPI 3, Jackson 3, Spring Boot Actuator,
 Micrometer
 
@@ -44,7 +44,7 @@ single service and single primary PostgreSQL database
 
 ### Pre-Design Gate Check
 
-- PASS: Java 21 LTS, Maven, Spring Boot latest stable baseline defined.
+- PASS: Java 21 LTS, Maven, Spring Boot 4.1.2 baseline defined.
 - PASS: API versioning and OpenAPI 3 documentation included in scope.
 - PASS: PostgreSQL selected as primary database.
 - PASS: Testing stack includes JUnit 5, Mockito, Testcontainers.

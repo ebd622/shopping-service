@@ -61,3 +61,14 @@
 - Alternatives considered:
   - Jackson 2 compatibility layer: rejected as policy violation.
 
+## Decision 8: Missing idempotency key handling
+
+- Decision: Reject `POST /api/v1/orders` requests missing `Idempotency-Key` with a standardized
+  validation error that identifies the required header.
+- Rationale: Keeps request semantics deterministic, enforces retry safety contract, and aligns with
+  clarified acceptance behavior.
+- Alternatives considered:
+  - Accept without key: rejected due to duplicate order risk.
+  - Auto-generate server key: rejected because it hides client retry intent and weakens contract
+    transparency.
+

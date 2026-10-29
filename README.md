@@ -1,6 +1,29 @@
 # shopping-service
 This is a demo application
 
+## Run Locally
+
+```bash
+cp .env.example .env
+docker compose up -d postgres
+mvn clean test
+mvn spring-boot:run
+```
+
+## API Endpoints
+
+- `GET /api/v1/products`
+- `POST /api/v1/orders` (requires `Idempotency-Key` header)
+- `GET /api/v1/orders/{id}`
+- `DELETE /api/v1/orders/{id}`
+
+## Quick curl checks
+
+```bash
+curl -sS http://localhost:8080/api/v1/products
+curl -sS -X POST http://localhost:8080/api/v1/orders -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-1' -d '{"items":[{"productId":"11111111-1111-1111-1111-111111111111","quantity":1}]}'
+```
+
 ### Constitution
 
 ```aiignore
